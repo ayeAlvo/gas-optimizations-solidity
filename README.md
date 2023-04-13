@@ -206,6 +206,38 @@ Example:
 239: require(attachments[_tokenId] == 0 && !voted[_tokenId], 'attached');
 ```
 
+### 7.1 Use nested if and, avoid multiple check combinations
+
+_Using nested is cheaper than using && multiple check combinations. There are more advantages, such as easier to read code and better coverage reports._
+
+Example:
+
+```java
+- 149:   if (param.long0FeesDesired == 0 && param.long1FeesDesired == 0 && param.shortFeesDesired == 0) Error.zeroInput();
++           if (param.long0FeesDesired == 0) {
++               if (param.long1FeesDesired == 0) {
++                   if (param.shortFeesDesired == 0) {
++                       Error.zeroInput();
++	 }
++               }
++           }
+```
+
+### 7.2 Sort Solidity operations using short-circuit mode
+
+_Short-circuiting is a solidity contract development model that uses `OR`/`AND` logic to sequence different cost operations. It puts low gas cost operations in the front and high gas cost operations in the back, so that if the front is low, if the cost operation is feasible, you can skip (short-circuit) the subsequent high-cost Ethereum virtual machine operation._
+
+Example:
+
+```java
+//f(x) is a low gas cost operation
+//g(y) is a high gas cost operation
+
+//Sort operations with different gas costs as follows
+f(x) || g(y)
+f(x) && g(y)
+```
+
 <hr>
 <br>
 
@@ -561,6 +593,29 @@ Deploy Inlined.sol: 110473
 Modifier.foo: 21532
 
 Inlined.foo: 21556
+
+<br>
+<hr>
+
+23. ## Save gas with the use of the import statement
+    _With the import statement, it saves gas to specifically import only the parts of the contracts, not the complete ones._
+
+```java
+6: import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+```
+
+Description:
+
+Solidity code is also cleaner in another way that might not be noticeable: the struct Point. We were importing it previously with global import but not using it. The Point struct `polluted the source code` with an unnecessary object we were not using because we did not need it.
+
+This was breaking the rule of modularity and modular programming: `only import what you need` Specific imports with curly braces allow us to apply this rule better.
+
+Recommendation:
+`import {contract1 , contract2} from "filename.sol";`
+
+```java
+import {ERC1155, ERC1155TokenReceiver} from “solmate/tokens/ERC1155.sol”;
+```
 
 <br>
 <hr>

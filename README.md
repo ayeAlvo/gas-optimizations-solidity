@@ -175,6 +175,23 @@ for (uint256 i; i < num.length; ++i) {};
 
 Remove explicit initialization for default values.
 
+### 6.1 Using delete instead of setting struct 0 save gas
+
+Example wrong:
+
+```java
+  93:    liquidityPosition.long0Fees = 0;
+  101:    liquidityPosition.long1Fees = 0;
+  109:    liquidityPosition.shortFees = 0;
+```
+
+Change for:
+
+```java
+- 228:    pool.long0ProtocolFees = 0;
++ 228:    delete pool.long0ProtocolFees;
+```
+
 <hr>
 <br>
 
@@ -432,7 +449,7 @@ changeWithTemp()
 
 17. ## Use named variables in function returns
 
-_When you don;t use the named variables in your return statement, you waste deployment gas._
+_When you dont use the named variables in your return statement, you waste deployment gas._
 
 ```java
 return numGates;
@@ -459,10 +476,33 @@ if (<x> == false)
  if (!<x>)
 ```
 
+### 19.1 Using bools for storage incurs overhead
+
+_Use uint256(1) and uint256(2) for true/false to avoid a Gwarmaccess (100 gas) for the extra SLOAD, and to avoid Gsset (20000 gas) when changing from ‘false’ to ‘true’, after having been ‘true’ in the past_
+
+Example:
+
+```java
+-  93 :-        if(vault.idExists(epochEnd) == false)
++  93 :+        if(vault.idExists(epochEnd) == 0)
+
+- 211 :-        if(insrVault.idExists(epochEnd) == false || riskVault.idExists(epochEnd) == false)
++ 211 :+        if(insrVault.idExists(epochEnd) == 0 || riskVault.idExists(epochEnd) == 0)
+
+- 54 :-    mapping(uint256 => bool) public idExists;
++ 54 :+    mapping(uint256 => uint256) public idExists;
+
+- 80 :-        if(idExists[id] != true)
++ 80 :+        if(idExists[id] != 1)
+
+- 314 :-        if(idExists[epochEnd] == true)
++ 314 :+        if(idExists[epochEnd] == 1)
+```
+
 <hr>
 <br>
 
-19. ## Use a more recent version of solidity
+20. ## Use a more recent version of solidity
 
 -   Use a solidity version of at least 0.8.0 to get overflow protection without SafeMath.
 -   Use a solidity version of at least 0.8.2 to get compiler automatic inlining.
@@ -473,7 +513,7 @@ if (<x> == false)
 <hr>
 <br>
 
-20. ## Shift Right instead of Dividing by 2
+21. ## Shift Right instead of Dividing by 2
 
 _A division by 2 can be calculated by shifting one to the right.
 While the DIV opcode uses 5 gas, the SHR opcode only uses 3 gas. Furthermore, Solidity’s division operation also includes a division-by-0 prevention which is bypassed using shifting._
@@ -483,7 +523,7 @@ Replace `/2` with `>> 1`
 <hr>
 <br>
 
-21. ## Use Modifiers Instead of Functions To Save Gas
+22. ## Use Modifiers Instead of Functions To Save Gas
 
 Example of two contracts with modifiers and internal view function:
 

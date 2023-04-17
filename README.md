@@ -296,10 +296,11 @@ Replace `x += y` and `x -= y` with `x = x + y` and `x = x - y`.
 <hr>
 <br>
 
-11. ## Using `> 0` costs more gas than `!= 0` when used on a `uint` in a `require()` and `assert` statement
+11. ## Using `> 0` costs more gas than `!= 0` when used on a `uint` in a `require()` and `assert` statement and `condicional`
 
 _`> 0` is less efficient than `!= 0` for unsigned integers._
 _`!= 0` costs less gas compared to `> 0` for unsigned integers in `require` and `assert` statements with the optimizer enabled (6 gas)._
+_To update this with using at least `0.8.6` there is no difference in gas usage with != 0 or > 0_
 
 Example wrong:
 
@@ -334,7 +335,82 @@ Gas savings: non-strict inequalities will save you 15–20 gas.
 
 ### 11.2 `> 0` is cheaper than `!= 0` sometimes
 
-_`!= 0` costs less gas compared to `> 0` for unsigned integers in require statements with the optimizer enabled. But `> 0` is cheaper than `!=`, with the optimizer enabled and outside a require statement. [See twwet](https://twitter.com/GalloDaSballo/status/1485430318706405378)_
+_`!= 0` costs less gas compared to `> 0` for unsigned integers in require statements `with the optimizer enabled`. But `> 0` is cheaper than `!=`, with the optimizer enabled and outside a require statement. [See twwet](https://twitter.com/GalloDaSballo/status/1485430318706405378)_
+
+```java
+
+uint256 public gas;
+function check1() external {
+        gas = gasleft();
+        require(99999999999999 != 0); // gas 22136 --disabled optimizer
+        gas -= gasleft();
+    }
+function check2() external {
+        gas = gasleft();
+        require(99999999999999 > 0); // gas 22136 --disabled optimizer
+        gas -= gasleft();
+    }
+function check3() external {
+        gas = gasleft();
+        if (99999999999999 != 0){ // 22149 gas --disabled optimizer
+            uint256 i = 123;
+        }
+        gas -= gasleft();
+    }
+function check4() external {
+        gas = gasleft();
+        if (99999999999999 > 0){ // 22152 gas --disabled optimizer
+            uint256 i = 123;
+        }
+        gas -= gasleft();
+    }
+```
+
+```java
+uint256 public gas;
+function check1() external {
+        gas = gasleft();
+        require(99999999999999 != 0); // gas 22106 --enabled optimizer
+        gas -= gasleft();
+    }
+function check2() external {
+        gas = gasleft();
+        require(99999999999999 > 0); // gas 22117 --enabled optimizer
+        gas -= gasleft();
+    }
+function check3() external {
+        gas = gasleft();
+        if (99999999999999 != 0){ // 22106 gas --enabled optimizer
+            uint256 i = 123;
+        }
+        gas -= gasleft();
+    }
+function check4() external {
+        gas = gasleft();
+        if (99999999999999 > 0){ // 22105 gas --enabled optimizer
+            uint256 i = 123;
+        }
+        gas -= gasleft();
+    }
+```
+
+### 11.2 `>=` is cheaper than `>`
+
+_Non-strict inequalities (`>=`) are cheaper than strict ones (`>`). This is due to some supplementary checks (ISZERO, 3 gas))._
+
+```java
+uint256 public gas;
+function checkStrict() external {
+        gas = gasleft();
+        require(999999999999999999 > 1); // gas 5017
+        gas -= gasleft();
+    }
+function checkNonStrict() external {
+        gas = gasleft();
+        require(999999999999999999 >= 1); // gas 5006
+        gas -= gasleft();
+    }
+```
 
 <hr>
 <br>
@@ -615,6 +691,62 @@ Recommendation:
 
 ```java
 import {ERC1155, ERC1155TokenReceiver} from “solmate/tokens/ERC1155.sol”;
+```
+
+<br>
+<hr>
+
+24. ## Use revert instead of require
+    _Use custom errors to save deployment and runtime costs in case of revert._
+    _Instead of using strings for error messages (e.g., `require(msg.sender == owner, “unauthorized”)`), you can use custom errors to reduce both deployment and runtime gas costs. In addition, they are very convenient as you can easily pass dynamic information to them._
+
+Before:
+
+```java
+function add(uint256 _amount) public {
+    require(msg.sender == owner, "unauthorized");
+
+    total += _amount;
+}
+```
+
+After:
+
+```java
+error Unauthorized(address caller);
+
+function add(uint256 _amount) public {
+    if (msg.sender != owner)
+        revert Unauthorized(msg.sender);
+
+    total += _amount;
+}
+```
+
+<br>
+<hr>
+
+25. ## Use `indexed` events as they are less costly compared to non-indexed ones [[Ref](https://twitter.com/maurelian_/status/1488691543544320000)]
+    _Using the `indexed` keyword for value types such as uint, bool, and address saves gas costs, as seen in the example below. However, this is only the case for value types, whereas indexing bytes and strings are more expensive than their unindexed version._
+
+Before:
+
+```java
+event Withdraw(uint256, address);
+
+function withdraw(uint256 amount) public {
+    emit Withdraw(amount, msg.sender);
+}
+```
+
+After:
+
+```java
+event Withdraw(uint256 indexed, address indexed);
+
+function withdraw(uint256 amount) public {
+    emit Withdraw(amount, msg.sender);
+}
 ```
 
 <br>

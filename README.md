@@ -133,7 +133,7 @@ Example wrong:
 <hr>
 <br>
 
-5. ## Using `calldata` instead of memory for read-only arguments in `external` functions saves gas
+5. ## Using `calldata` instead of `memory` for read-only arguments in `external` functions saves gas
 
 _If you choose to make suggested above `public` functions as `external`, to continue gas optimizaton we can use `calldata` function arguments instead of `memory`.
 When a function with a `memory` array is called externally, the `abi.decode()` step has to use a for-loop to copy each index of the calldata to the memory index. Each iteration of this for-loop costs at least 60 gas (i.e. `60 * <mem_array>.length`). Using `calldata` directly, obliviates the need for such a loop in the contract code and runtime execution. Structs have the same overhead as an array of length one._

@@ -299,7 +299,9 @@ Replace `x += y` and `x -= y` with `x = x + y` and `x = x - y`.
 11. ## Using `> 0` costs more gas than `!= 0` when used on a `uint` in a `require()` and `assert` statement and `condicional`
 
 _`> 0` is less efficient than `!= 0` for unsigned integers._
+
 _`!= 0` costs less gas compared to `> 0` for unsigned integers in `require` and `assert` statements with the optimizer enabled (6 gas)._
+
 _To update this with using at least `0.8.6` there is no difference in gas usage with != 0 or > 0_
 
 Example wrong:
@@ -316,6 +318,7 @@ Or update `soldity` compiler to `>=0.8.13`
 ### 11.1 `>=` is cheaper than `>`
 
 _Non-strict inequalities (`>=`) are cheaper than strict ones (`>`). This is due to some supplementary checks (ISZERO, 3 gas)._
+_The compiler uses opcodes GT and ISZERO for solidity code that uses >, but only requires LT for >=, which saves 3 gas_
 
 ```java
 uint256 public gas;
@@ -726,8 +729,11 @@ function add(uint256 _amount) public {
 <br>
 <hr>
 
-25. ## Use `indexed` events as they are less costly compared to non-indexed ones [[Ref](https://twitter.com/maurelian_/status/1488691543544320000)]
-    _Using the `indexed` keyword for value types such as uint, bool, and address saves gas costs, as seen in the example below. However, this is only the case for value types, whereas indexing bytes and strings are more expensive than their unindexed version._
+25. ## Use `indexed` events as they are less costly compared to non-indexed ones [[Ref](https://twitter.com/maurelian_/status/1488691543544320000)] - Event is missing `indexed` fields. (Non-critical)
+
+    _Index event fields make the field more quickly accessible to off-chain tools that parse events. However, note that each index field costs extra gas during emission, so it’s not necessarily best to index the maximum allowed per event (threefields). Each event should use three indexed fields if there are three or more fields, and gas usage is not particularly of concern for the events in question. `If there are fewer than three fields, all of the fields should be indexed`._
+
+    _Using the `indexed` keyword for value types such as `uint`, `bool`, and `address` saves gas costs, as seen in the example below. However, this is only the case for value types, whereas indexing `bytes` and `strings` are more expensive than their unindexed version._
 
 Before:
 
@@ -748,6 +754,12 @@ function withdraw(uint256 amount) public {
     emit Withdraw(amount, msg.sender);
 }
 ```
+
+<br>
+<hr>
+
+26. # Using `private` rather than `public` for constants, saves gas.
+    _If needed, the value can be read from the verified contract source code. Savings are due to the compiler not having to create non-payable getter functions for deployment calldata, and not adding another entry to the method ID table._
 
 <br>
 <hr>

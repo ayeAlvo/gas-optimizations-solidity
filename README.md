@@ -699,7 +699,7 @@ import {ERC1155, ERC1155TokenReceiver} from “solmate/tokens/ERC1155.sol”;
 <br>
 <hr>
 
-24. ## Use revert instead of require
+24. ## Use custom errors (Non-critical)
     _Use custom errors to save deployment and runtime costs in case of revert._
     _Instead of using strings for error messages (e.g., `require(msg.sender == owner, “unauthorized”)`), you can use custom errors to reduce both deployment and runtime gas costs. In addition, they are very convenient as you can easily pass dynamic information to them._
 
@@ -725,6 +725,10 @@ function add(uint256 _amount) public {
     total += _amount;
 }
 ```
+
+### 24.1 Use `revert` instead of `require`. (Use custom errors)
+
+\_\_
 
 <br>
 <hr>
@@ -760,6 +764,130 @@ function withdraw(uint256 amount) public {
 
 26. # Using `private` rather than `public` for constants, saves gas.
     _If needed, the value can be read from the verified contract source code. Savings are due to the compiler not having to create non-payable getter functions for deployment calldata, and not adding another entry to the method ID table._
+
+<br>
+<hr>
+
+27. # Unnecessary look up in `if` condition
+    _If the `||` condition isn’t required, the second condition will have been looked up unnecessarily._
+
+```java
+95: if (notEnoughRetryInvocations || notEnoughTimeReachingMaxFailedAttempts) {...}
+```
+
+<br>
+<hr>
+
+28. # Don’t use `SafeMath` for `>0.8.0`
+
+    _Solidity version 0.8.0 introduces internal overflow checks, so using SafeMath is redundant and adds overhead._
+
+<br>
+<hr>
+
+29. # Using XOR (`^`) and OR (`|`) bitwise equivalents.
+
+-   `(a != b || c != d || e != f)` costs 571
+-   `((a ^ b) | (c ^ d) | (e ^ f)) != 0` costs 498 (saving 73 gas)
+
+Consider rewriting as follows to save gas:
+
+```java
+  93:     if (
+- 94:         execution.item.itemType != considerationItem.itemType ||
+- 95:         execution.item.token != considerationItem.token ||
+- 96:         execution.item.identifier != considerationItem.identifier
++ 94:         ((uint8(execution.item.itemType) ^ uint8(considerationItem.itemType)) |
++ 95:         (uint160(execution.item.token) ^ uint160(considerationItem.token)) |
++ 96:         (execution.item.identifier ^ considerationItem.identifier)) != 0
+  97:       ) {
+```
+
+## Logic POC
+
+-   Given 4 variables `a`, `b`, `c` and `d` represented as such:
+
+```java
+0 0 0 0 0 1 1 0 <- a
+0 1 1 0 0 1 1 0 <- b
+0 0 0 0 0 0 0 0 <- c
+1 1 1 1 1 1 1 1 <- d
+```
+
+To have `a == b` means that every `0` and `1` match on both variables. Meaning that a XOR (operator `^`) would evaluate to 0 (`(a ^ b) == 0`), as it excludes by definition any equalities.
+Now, if `a != b`, this means that there’s at least somewhere a `1` and a `0` not matching between `a` and `b`, making `(a ^ b) != 0`.
+
+Both formulas are logically equivalent and using the XOR bitwise operator costs actually the same amount of gas:
+
+```java
+function xOrEquivalence(uint a, uint b) external returns (bool) {
+        //return a != b; //370
+        //return a ^ b != 0; //370
+```
+
+However, it is much cheaper to use the bitwise OR operator (`|`) than comparing the truthy or falsy values:
+
+```java
+function xOrOrEquivalence(uint a, uint b, uint c, uint d) external returns (bool) {
+        //return (a != b || c != d); // 495
+        //return (a ^ b | c ^ d) != 0; // 442
+    }
+```
+
+These are logically equivalent too, as the OR bitwise operator (`|`) would result in a `1` somewhere if any value is not `0` between the XOR (`^`) statements, meaning if any XOR (`^`) statement verifies that its arguments are different.
+
+Recommended mittigations steps:
+
+-   Consider applying the suggested equivalence and add a comment mentioning what this is equivalent to, as this is less human-readable, but still understandable once it’s been taught.
+
+<br>
+<hr>
+
+30. # Shift left by 5 instead of multiplying by 32.
+    _The equivalent of multiplying by 32 is shifting left by 5. On Remix, a simple POC shows some by replacing one with the other (Optimizer at 10k runs):_
+
+```java
+function shiftLeft5(uint256 a) public pure returns (uint256) {
+        //unchecked { return a * 32; } //346
+        //unchecked { return a << 5; } //344
+    }
+```
+
+This is due to the fact that the MUL opcode costs 5 gas and the SHL opcode costs 3 gas. Therefore, saving those 2 units of gas is expected.
+
+Places where this optimization can be applied are as such:
+
+-   A simple multiplication by 32:
+
+```java
+- 220:    terminalMemoryOffset = (totalOrders + 1) * 32; //@audit-issue << 5
++ 220:    terminalMemoryOffset = (totalOrders + 1) << 5;
+```
+
+-   Multiplying by the constant `OneWord == 0x20`, as `0x20` in hex is actually `32` in decimals:
+
+```java
+-  386:   uint256 tailOffset = arrLength * OneWord;
++  386:   uint256 tailOffset = arrLength << 5;
+```
+
+<br>
+<hr>
+
+# 31. `10 ** 18` can be changed to `1e18` and save some gas.
+
+_`10 ** 18` can be changed to `1e18` to aavoid unnecessary arithmetic operation and save gas_
+
+# 32. Use assembly when getting a contract’s balance of ETH.
+
+_You can use `selfbalance()` instead of `address(this).balance` when getting your contract’s balance of ETH to save gas. Additionally, you can use `balance(address)` instead of `address.balance()` when getting an external contract’s balance of ETH._
+
+```java
+contract Contract0 {
+    function addressInternalBalance() public returns (uint256) {
+        return address(this).balance;
+    }
+```
 
 <br>
 <hr>

@@ -843,7 +843,7 @@ Recommended mittigations steps:
 <br>
 <hr>
 
-30. # Shift left by 5 instead of multiplying by 32.
+30. # Shift left by 5 instead of multiplying by 32. [Docs](https://docs.soliditylang.org/en/v0.5.3/types.html#shifts)
     _The equivalent of multiplying by 32 is shifting left by 5. On Remix, a simple POC shows some by replacing one with the other (Optimizer at 10k runs):_
 
 ```java
@@ -888,6 +888,41 @@ contract Contract0 {
         return address(this).balance;
     }
 ```
+
+<br>
+<hr>
+
+# 33. Replacing `modifiers` with `private` functions. - Using `private` functions instead of `modifier` might be better.
+
+_Can optimize their contracts bytecode size._
+
+[See info this tweet](https://twitter.com/zaryab_eth/status/1652625870874451968)
+
+-   𝐌𝐨𝐝𝐢𝐟𝐢𝐞𝐫𝐬 𝐚𝐫𝐞 𝐞𝐱𝐩𝐚𝐧𝐝𝐞𝐝 𝐢𝐧𝐥𝐢𝐧𝐞:
+
+➡️ When you use a modifier, Solidity copies the entire code of the modifier into every function that calls it.
+
+This means that the modifier code becomes a part of the function and is included in the bytecode generated for that function.
+
+This technically means that the modifier code is replicated in every function where the modifier is used, which can increase the size of the contract's bytecode.
+
+-   𝐏𝐫𝐢𝐯𝐚𝐭𝐞 𝐟𝐮𝐧𝐜𝐭𝐢𝐨𝐧𝐬 𝐚𝐫𝐞 𝐨𝐧𝐥𝐲 𝐰𝐫𝐢𝐭𝐭𝐞𝐧 𝐨𝐧𝐜𝐞:
+
+➡️ On the other hand, a private function is only written once and can be called from multiple places in your contract without increasing its size.
+
+➡️ This makes it a much more efficient way to perform checks without duplicating code.
+
+Note: In fact, if your contract is fairly smaller and is quite below the maximum contract size threshold of 24.576 kb, modifiers shouldn’t even be a problem for you.
+However, considering a bulky contract where a check/validation is supposed to be used multiple times which unnecessarily increases your contract’s size, then using `private` functions instead of `modifier` might be better.
+
+<br>
+<hr>
+
+## 34. Revert as early as possible.
+
+_You pay gas up intil the REVERT opcode is hit._
+
+_You pay gas for everything before the `require()` in the revert case._
 
 <br>
 <hr>

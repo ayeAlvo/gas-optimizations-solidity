@@ -926,6 +926,17 @@ _You pay gas for everything before the `require()` in the revert case._
 
 <br>
 <hr>
+
+## 35. Avoid comparing Boolean Expressions to Boolean Literals
+
+```java
+if (<x> == true) => if (<x>)
+
+if (<x> == false) => if (!<x>)
+```
+
+<br>
+<hr>
 <br>
 
 based on real reports [Code4arena](https://code4rena.com/reports)

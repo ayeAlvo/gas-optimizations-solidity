@@ -937,6 +937,36 @@ if (<x> == false) => if (!<x>)
 
 <br>
 <hr>
+
+## 36. Inverting the condition of an `if-else-statement` wastes gas.
+
+_Flipping the true and false blocks instead saves [3 gas](https://gist.github.com/IllIllI000/44da6fbe9d12b9ab21af82f14add56b9)._
+
+<br>
+<hr>
+
+## 37. Functions guaranteed to revert when called by normal users can be marked `payable`.
+
+_If a function modifier such as `onlyOwner` is used, the function will revert if a normal user tries to pay the function. Marking the function as `payable` will lower the gas cost for legitimate callers because the compiler will not include checks for whether a payment was provided. The extra opcodes avoided are `CALLVALUE(2)`, `DUP1(3)`, `ISZERO(3)`, `PUSH2(3)`, `JUMPI(10)`, `PUSH1(3)`, `DUP1(3)`, `REVERT(0)`, `JUMPDEST(1)`, `POP(2)`, which costs an average of about 21 gas per call to the function, in addition to the extra deployment cost._
+
+<br>
+<hr>
+
+## 38. State variables only set in the constructor should be declared `immutable`.
+
+_Avoids a Gsset (20000 gas) in the constructor, and replaces each Gwarmacces (100 gas) with a `PUSH32` (3 gas)._
+
+```java
+contract PriceOracleImplementation is PriceOracle {
+    address public cEtherAddress;
+
+    constructor(address _cEtherAddress) public {
+        cEtherAddress = _cEtherAddress;
+    }
+```
+
+<br>
+<hr>
 <br>
 
 based on real reports [Code4arena](https://code4rena.com/reports)

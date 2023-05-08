@@ -133,10 +133,11 @@ Example wrong:
 <hr>
 <br>
 
-5. ## Using `calldata` instead of `memory` for read-only arguments in `external` functions saves gas
+5. ## Using `calldata` instead of `memory` for read-only arguments in `external` functions saves gas.
 
-_If you choose to make suggested above `public` functions as `external`, to continue gas optimizaton we can use `calldata` function arguments instead of `memory`.
-When a function with a `memory` array is called externally, the `abi.decode()` step has to use a for-loop to copy each index of the calldata to the memory index. Each iteration of this for-loop costs at least 60 gas (i.e. `60 * <mem_array>.length`). Using `calldata` directly, obliviates the need for such a loop in the contract code and runtime execution. Structs have the same overhead as an array of length one._
+_If you choose to make suggested above `public` functions as `external`, to continue gas optimizaton we can use `calldata` function arguments instead of `memory`._
+
+_When a function with a `memory` array is called externally, the `abi.decode()` step has to use a for-loop to copy each index of the calldata to the memory index. Each iteration of this for-loop costs at least 60 gas (i.e. `60 * <mem_array>.length`). Using `calldata` directly, obliviates the need for such a loop in the contract code and runtime execution. Structs have the same overhead as an array of length one._
 
 Example:
 
@@ -242,9 +243,10 @@ f(x) && g(y)
 <br>
 
 8. ## `abi.encode()` is less efficient than `abi.encodePacked()`
-    \_`abi.encode` will apply [ABI encoding rules](https://docs.soliditylang.org/en/v0.8.11/abi-spec.html). Therefore all elementary types are padded to 32 bytes and dynamic arrays include their length. Therefore it is possible to also decode this data again (with `abi.decode`) when the type are known.
 
-`abi.encodePacked` will only use the minimal required memory to encode the data. E.g. an address will only use 20 bytes and for dynamic arrays only the elements will be stored without length. For more info see the [Solidity docs for packed mode](https://docs.soliditylang.org/en/v0.8.11/abi-spec.html?highlight=encodepacked#non-standard-packed-mode).\_
+_`abi.encode` will apply [ABI encoding rules](https://docs.soliditylang.org/en/v0.8.11/abi-spec.html). Therefore all elementary types are padded to 32 bytes and dynamic arrays include their length. Therefore it is possible to also decode this data again (with `abi.decode`) when the type are known._
+
+_`abi.encodePacked` will only use the minimal required memory to encode the data. E.g. an address will only use 20 bytes and for dynamic arrays only the elements will be stored without length. For more info see the [Solidity docs for packed mode](https://docs.soliditylang.org/en/v0.8.11/abi-spec.html?highlight=encodepacked#non-standard-packed-mode)._
 
 Example:
 

@@ -958,6 +958,8 @@ _If a function modifier such as `onlyOwner` is used, the function will revert if
 
 _Avoids a Gsset (20000 gas) in the constructor, and replaces each Gwarmacces (100 gas) with a `PUSH32` (3 gas)._
 
+_Avoids a Gsset (20000 gas) in the constructor, and replaces the first access in each transaction (Gcoldsload - 2100 gas) and each access thereafter (Gwarmacces - 100 gas) with a PUSH32 (3 gas)._
+
 ```java
 contract PriceOracleImplementation is PriceOracle {
     address public cEtherAddress;
@@ -966,6 +968,117 @@ contract PriceOracleImplementation is PriceOracle {
         cEtherAddress = _cEtherAddress;
     }
 ```
+
+<br>
+<hr>
+
+## 39. Use assembly to check for `address(0)`.
+
+```java
+function ownerNotZero(address _addr) public pure {
+    require(_addr != address(0), "zero address)");
+}
+```
+
+Gas: 258
+
+```java
+function assemblyOwnerNotZero(address _addr) public pure {
+    assembly {
+        if iszero(_addr) {
+            mstore(0x00, "zero address")
+            revert(0x00, 0x20)
+        }
+    }
+}
+```
+
+Gas: 252
+
+_`isZero` and `mstore` we’ve already seen it above, so let’s check now what is the explanation for `revert`._
+
+![](/Img/revert.webp)
+
+<br>
+<hr>
+
+## 40. When possible, use assembly instead of `unchecked{++i}`.
+
+_You can also use `unchecked{++i;}` for even more gas savings but this will not check to see if `i` overflows. For best gas savings, use inline assembly, however this limits the functionality you can achieve._
+
+```java
+//loop with unchecked{++i}
+function uncheckedPlusPlusI() public pure {
+    uint256 j = 0;
+    for (uint256 i; i < 10; ) {
+        j++;
+        unchecked {
+            ++i;
+        }
+    }
+}
+```
+
+Gas: 1329
+
+```java
+//loop with inline assembly
+function inlineAssemblyLoop() public pure {
+    assembly {
+        let j := 0
+        for {
+            let i := 0
+        } lt(i, 10) {
+            i := add(i, 0x01)
+        } {
+            j := add(j, 0x01)
+        }
+    }
+}
+```
+
+Gas: 709
+
+Now, the explanation of `lt` Yul instruction and similar and explanation:
+![](/Img/it-Yul.webp)
+
+## 40.1 For Loops & If Statements.
+
+Example:
+
+```java
+function howManyEvens(uint256 startNum, uint256 endNum) external pure returns(uint256) {
+
+    // the value we will return
+    uint256 ans;
+
+    assembly {
+
+        // syntax for for loop
+        for { let i := startNum } lt( i, add(endNum, 1)  ) { i := add(i,1) }
+        {
+            // if i == 0 skip this iteration
+            if iszero(i) {
+                continue
+            }
+
+            // checks if i % 2 == 0
+            // we could of used iszero, but I wanted to show you eq()
+            if  eq( mod( i, 2 ), 0 ) {
+                ans := add(ans, 1)
+            }
+
+        }
+
+    }
+
+
+    return ans;
+
+}
+```
+
+_The syntax for `if` statements is very similar to solidity, however, we do not need to wrap the condition in parentheses. For the `for` loop, notice we are using brackets when declaring `i` and incrementing `i`, but not when we evaluate the condition. Additionally, we used a `continue` to skip an iteration of the loop. We can also use `break` statements in Yul, as well._
 
 <br>
 <hr>

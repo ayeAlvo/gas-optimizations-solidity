@@ -1080,6 +1080,22 @@ function howManyEvens(uint256 startNum, uint256 endNum) external pure returns(ui
 
 _The syntax for `if` statements is very similar to solidity, however, we do not need to wrap the condition in parentheses. For the `for` loop, notice we are using brackets when declaring `i` and incrementing `i`, but not when we evaluate the condition. Additionally, we used a `continue` to skip an iteration of the loop. We can also use `break` statements in Yul, as well._
 
+## 41. State variables only set in the constructor should be declared `immutable`.
+
+_Avoids a Gsset (20000 gas) in the constructor, and replaces the first access in each transaction (Gcoldsload - 2100 gas) and each access thereafter (Gwarmacces - 100 gas) with a `PUSH32` (3 gas)._
+
+_In the example below, `twa.lookback` never changes, so it should be pulled out of the struct and converted to an immutable value. If you still want the struct to contain the lookback, create a private version of the twa struct, for storage purposes, that does not have the `lookback`, and use that to build the original twa structs on the fly, when requested, and pass the value as an argument to `TWA.getTwa()` when it’s called. Since this is in the hot path, you’ll save a lot of gas._
+
+Example:
+
+```java
+File: maverick-v1/contracts/models/Pool.sol
+/// @audit twa.lookback (constructor)
+77:           twa.lookback = _lookback;
+/// @audit twa (access)
+102:          return twa;
+```
+
 <br>
 <hr>
 <br>
